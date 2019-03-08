@@ -1,5 +1,4 @@
 import Foundation
-import JWA
 
 
 /// Represents a JSON Web Algorithm (JWA)

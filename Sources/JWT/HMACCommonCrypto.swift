@@ -2,28 +2,7 @@ import Foundation
 import CommonCrypto
 
 
-extension HMACAlgorithm: SignAlgorithm, VerifyAlgorithm {
-  public func sign(_ message: Data) -> Data {
-    let context = UnsafeMutablePointer<CCHmacContext>.allocate(capacity: 1)
-    defer { context.deallocate(capacity: 1) }
-
-    key.withUnsafeBytes() { (buffer: UnsafePointer<UInt8>) in
-      CCHmacInit(context, hash.commonCryptoAlgorithm, buffer, size_t(key.count))
-    }
-
-    message.withUnsafeBytes { (buffer: UnsafePointer<UInt8>) in
-      CCHmacUpdate(context, buffer, size_t(message.count))
-    }
-
-    var hmac = Array<UInt8>(repeating: 0, count: Int(hash.commonCryptoDigestLength))
-    CCHmacFinal(context, &hmac)
-
-    return Data(hmac)
-  }
-}
-
-
-extension HMACAlgorithm.Hash {
+extension HMACAlgorithm {
   var commonCryptoAlgorithm: CCHmacAlgorithm {
     switch self {
     case .sha256:
@@ -45,4 +24,23 @@ extension HMACAlgorithm.Hash {
       return CC_SHA512_DIGEST_LENGTH
     }
   }
+}
+
+
+func hmac(algorithm: HMACAlgorithm, key: Data, message: Data) -> Data {
+  let context = UnsafeMutablePointer<CCHmacContext>.allocate(capacity: 1)
+  defer { context.deallocate(capacity: 1) }
+
+  key.withUnsafeBytes() { (buffer: UnsafePointer<UInt8>) in
+    CCHmacInit(context, algorithm.commonCryptoAlgorithm, buffer, size_t(key.count))
+  }
+
+  message.withUnsafeBytes { (buffer: UnsafePointer<UInt8>) in
+    CCHmacUpdate(context, buffer, size_t(message.count))
+  }
+
+  var hmac = Array<UInt8>(repeating: 0, count: Int(algorithm.commonCryptoDigestLength))
+  CCHmacFinal(context, &hmac)
+
+  return Data(hmac)
 }
